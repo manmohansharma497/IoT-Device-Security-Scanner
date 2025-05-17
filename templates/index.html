@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Security Scanner Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i data-feather="shield"></i>
+                <span>IoT Security</span>
+            </div>
+            <nav>
+                <ul>
+                    <li class="active"><a href="#"><i data-feather="home"></i> Dashboard</a></li>
+                    <li><a href="http://localhost:5000/api/scans"><i data-feather="activity"></i> Scans</a></li>
+                    <li><a href="http://localhost:5000/api/vulnerability-stats"><i data-feather="alert-triangle"></i> Vulnerabilities</a></li>
+                    <li><a href="http://localhost:5000/api/port-stats"><i data-feather="settings"></i> Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="header">
+                <h1>Dashboard Overview</h1>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Admin" alt="User">
+                </div>
+            </header>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #6366F1;">
+                        <i data-feather="globe"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span>Devices</span>
+                        <h3 id="device-count">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #10B981;">
+                        <i data-feather="check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span>Secure</span>
+                        <h3 id="secure-count">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #F59E0B;">
+                        <i data-feather="alert-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span>Warnings</span>
+                        <h3 id="warning-count">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #EF4444;">
+                        <i data-feather="x-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span>Critical</span>
+                        <h3 id="critical-count">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+    <div class="chart-container">
+        <canvas id="vulnerabilityChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="portChart"></canvas>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Device</th>
+            <th>IP</th>
+            <th>Status</th>
+            <th>Ports</th>
+            <th>Vulnerabilities</th>
+            <th>Last Scan</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="devices-table-body">
+        <!-- Will be filled by JavaScript -->
+    </tbody>
+</table>
+
+<button id="refresh-btn" class="btn">
+    <i data-feather="refresh-cw"></i> Refresh
+</button>
+
+            <!-- Devices Table Section -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>Detected Devices</h3>
+                    <div class="table-actions">
+                        <button class="export-btn" id="export-csv">
+                            <i data-feather="download"></i> Export CSV
+                        </button>
+                        <button class="export-btn" id="print-report">
+                            <i data-feather="printer"></i> Print Report
+                        </button>
+                    </div>
+                </div>
+                <div class="search-box">
+                    <i data-feather="search"></i>
+                    <input type="text" id="search" placeholder="Search devices...">
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Device</th>
+                                <th>IP Address</th>
+                                <th>Status</th>
+                                <th>Ports</th>
+                                <th>Vulnerabilities</th>
+                                <th>Last Scan</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-table-body">
+                            <!-- Filled dynamically by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-footer">
+                    <div class="pagination">
+                        <button id="prev-page" disabled><i data-feather="chevron-left"></i></button>
+                        <span id="page-info">Page 1 of 1</span>
+                        <button id="next-page" disabled><i data-feather="chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Device Details Modal -->
+    <div id="device-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Device Details</h3>
+                <button id="close-modal"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row">
+                    <span>Device Name</span>
+                    <strong id="detail-device-name">-</strong>
+                </div>
+                <div class="detail-row">
+                    <span>IP Address</span>
+                    <strong id="detail-ip">-</strong>
+                </div>
+                <div class="detail-row">
+                    <span>MAC Address</span>
+                    <strong id="detail-mac">-</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Vendor</span>
+                    <strong id="detail-vendor">-</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Last Scan</span>
+                    <strong id="detail-timestamp">-</strong>
+                </div>
+                
+                <div class="ports-list">
+                    <h4>Open Ports</h4>
+                    <ul id="ports-list">
+                        <!-- Filled dynamically -->
+                    </ul>
+                </div>
+                
+                <div class="vulnerability-list">
+                    <h4>Vulnerabilities</h4>
+                    <ul id="vulnerabilities-list">
+                        <!-- Filled dynamically -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dark Mode Toggle -->
+    <div class="theme-toggle">
+        <button id="dark-mode-toggle">
+            <i data-feather="moon"></i>
+        </button>
+    </div>
+
+    <div id="debug-console" style="position: fixed; bottom: 0; left: 0; background: white; padding: 10px; z-index: 1000; border: 1px solid red;">
+    <h4>Debug Console</h4>
+    <div id="debug-output"></div>
+    </div>
+
+    <!-- Add to index.html -->
+<div class="dashboard-grid">
+    <!-- Existing stats cards -->
+    
+    <!-- New Risk Overview Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Network Risk Overview</h3>
+        </div>
+        <div class="card-body">
+            <div id="risk-meter" class="risk-meter">
+                <div class="risk-level" id="risk-level-indicator"></div>
+            </div>
+            <div class="risk-stats" id="risk-stats">
+                <div class="risk-stat">
+                    <span>High Risk Devices</span>
+                    <strong id="high-risk-count">0</strong>
+                </div>
+                <div class="risk-stat">
+                    <span>Exposed Services</span>
+                    <strong id="exposed-services">0</strong>
+                </div>
+                <div class="risk-stat">
+                    <span>Credential Risks</span>
+                    <strong id="credential-risks">0</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Vulnerable Services Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Vulnerable Services</h3>
+        </div>
+        <div class="card-body">
+            <ul class="service-list" id="vulnerable-services-list">
+                <!-- Filled by JavaScript -->
+            </ul>
+        </div>
+    </div>
+</div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        feather.replace(); // Initialize Feather icons
+    </script>
+</body>
+</html>
