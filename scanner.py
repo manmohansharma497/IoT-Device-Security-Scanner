@@ -11,7 +11,7 @@ from typing import List, Dict, Optional, Any
 CVE_API_URL = "https://services.nvd.nist.gov/rest/json/cves/1.0"
 MAC_LOOKUP_API_URL = "https://api.macvendors.com/"
 SHODAN_API_URL = "https://api.shodan.io/shodan/host/"
-SHODAN_API_KEY = "YS4PbuZcnFqSIdH8oZG2zu3VVXjETxzF"  # Replace with your actual key
+SHODAN_API_KEY = "Your Shodan API"  # Replace with your actual key
 DEFAULT_CREDENTIALS = [
     ("admin", "admin"),
     ("user", "user"),
